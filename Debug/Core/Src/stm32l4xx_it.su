@@ -1,0 +1,4 @@
+stm32l4xx_it.c:81:6:DMA1_Channel7_IRQHandler	8	static
+stm32l4xx_it.c:95:6:DMA2_Channel1_IRQHandler	8	static
+stm32l4xx_it.c:109:6:DMA2_Channel2_IRQHandler	8	static
+stm32l4xx_it.c:125:6:USART2_IRQHandler	8	static
