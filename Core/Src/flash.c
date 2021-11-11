@@ -70,6 +70,7 @@ void ModBus_SendInt(unsigned int val) //sent one int
  number_TX_bytes =6;
 }
 
+unsigned int Address_old;
 void flash_erase(unsigned int start_sector, unsigned int stop_sector) {
 
 	  int start_page = start_sector * 2; //page_size: 0x800 (STM),  sector_size: 0x1000 (LPC)
@@ -84,6 +85,7 @@ void flash_erase(unsigned int start_sector, unsigned int stop_sector) {
 	  EraseInitStruct.Banks       = FLASH_BANK_1;
 	  EraseInitStruct.Page        = start_page;
 	  EraseInitStruct.NbPages     = (stop_sector * 2) - start_page;
+	  Address_old = 0;
 
 	  if( HAL_FLASHEx_Erase(&EraseInitStruct, &PAGEError) != HAL_OK){
 	     tracker_status |= SYS_PARAM_FLASH_ERR;
@@ -119,7 +121,6 @@ void eraseApp() {
 	  return;
 }
 
-unsigned int Address_old;
 void flash_write_boot(unsigned int write_address, unsigned int size) {
 
 	if (Address_old >= write_address){ // Before retrying flash write, erase sector!

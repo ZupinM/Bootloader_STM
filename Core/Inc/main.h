@@ -56,7 +56,7 @@ typedef struct {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-#define BUFSIZE		255
+#define BUFSIZE		1040
 extern uint8_t transceiver;
 extern uint8_t transceiver_saved;
 extern uint8_t LoRa_channel_received;
@@ -72,6 +72,7 @@ extern unsigned int backup_timeout;
 extern volatile unsigned int bldc_Speed;
 extern unsigned int store_in_flash;
 extern uint8_t init_main_state;
+void save_to_buffer(char* input, uint32_t length);
 
 extern volatile uint8_t UARTBuffer0[BUFSIZE];
 extern unsigned char uartMode;

@@ -83,6 +83,8 @@ float err_currentB;
 float err_positionB;
 float err_voltageB;
 
+extern unsigned int Address_old;
+
 unsigned int tracker_status;			//status kondicije, v kateri je tracker (napake, halli...)
 unsigned int tracker_status2;			//Status for motors 1 & 3 when motor_count > 3
 unsigned int tracker_exstatus;
@@ -382,6 +384,7 @@ int main(void)
 
 	       }
 	     }else if(modbus_newRequest() && (huart485->gState != HAL_UART_STATE_BUSY && huart485->RxState != HAL_UART_STATE_BUSY_RX ) ){
+	    	 //save_to_buffer(UARTBuffer0, 8);
 	         SEGGER_RTT_printf(0, "id:%#02x  cmd:%#02x %#02x %#02x %#02x %#02x %#02x %#02x %#02x l:%d\n" , UARTBuffer0[0], UARTBuffer0[1], UARTBuffer0[2], UARTBuffer0[3], UARTBuffer0[4], UARTBuffer0[5], UARTBuffer0[6], UARTBuffer0[7], UARTBuffer0[8], UARTCount0);
 
 		     // MODBUS RS485
@@ -455,6 +458,17 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
+char glSavingBuffer[50][8];
+uint32_t glBuff_index;
+void save_to_buffer(char* input, uint32_t length){
+	if((glBuff_index+1)*length > sizeof(glSavingBuffer)){
+		return;
+	}
+	glBuff_index ++;
+	for(int i=0 ; i<=length ; i++){
+		glSavingBuffer[glBuff_index][i] = *(input + i);
+	}
+}
 
 /***********************************************************
   LED HANDLING & 1 second TICK
@@ -494,13 +508,10 @@ void led_handling() {
 /***********************************************************
   MODBUS COMMANDS
 ************************************************************/
+int tmp_addr = 0;
 void modbus_cmd () {
 
   unsigned int Utemp;
-
-  if(UARTBuffer0[0] == 16 && UARTBuffer0[1] == 15 ){
-	  UARTBuffer0[26] = 16;
-  }
 
   if(transceiver == LORA){
     memcpy((uint8_t *)UARTBuffer0, (uint8_t *)module.rxBuffer, BUFSIZE);
@@ -520,6 +531,13 @@ void modbus_cmd () {
       upgMode = CRC_MODE_UPGRADE;
       modbus_crc (UARTCount0, upgMode);
     }
+
+	/*if(Address_old == 0x1f200){
+		if(tmp_addr++){
+			tmp_addr = 0;
+			HAL_Delay(1);
+		}
+	}*/
 
     // disable reset, status (0x01, 0x06 lenght 4) and get all params (0x78) command - only from product
     if ((crc_calc == 0 && crypdedRx == RX_MODE_CRYPTED) || (crc_calc == 0 && UARTBuffer0[1] != 0x78 && crypdedRx == RX_MODE_NORMAL)) {

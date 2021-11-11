@@ -330,7 +330,9 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *UartHandle)
 {
   /* Set transmission flag: transfer complete */
-	HAL_UART_DMAStop(huart485); // Transfer complete
+	if(HAL_UART_DMAStop(huart485) != HAL_OK){ // Transfer complete
+		Error_Handler();
+	}
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
@@ -343,7 +345,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 	UARTCount0 = BUFSIZE - __HAL_DMA_GET_COUNTER(hdma_usart485_rx);
     ModbusState0 |= MODBUS_PACKET_RECIVED;
 
-    if(HAL_UART_DMAStop(huart485) ) //Stop receiving
+    if(HAL_UART_DMAStop(huart485) != HAL_OK ) //Stop receiving
     {
       Error_Handler();
     }
@@ -429,16 +431,21 @@ void modbus_ReqProcessed()
 
 void reEnable_485_DMA_RX(void){
 
-	if (huart485->RxState == HAL_UART_STATE_READY && hdma_usart485_tx->State != HAL_DMA_STATE_BUSY){	//Reenable reception, when DMA is stoped in HAL_UART_RxCpltCallback
-	    if(HAL_UART_DMAStop(huart485) ) //stop again to prevent errors
-	    {
-	      Error_Handler();
-	    }
- 	    if(HAL_UART_Receive_DMA(huart485, (uint8_t *)UARTBuffer0, BUFSIZE) != HAL_OK) 	//Start receiving
- 	    {
- 	      Error_Handler();
- 	    }
-    }
+	uint32_t timeout_counter = 1000000;
+	while (! (huart485->RxState == HAL_UART_STATE_READY && hdma_usart485_tx->State != HAL_DMA_STATE_BUSY)){	//Reenable reception, when DMA is stoped in HAL_UART_RxCpltCallback
+		if(timeout_counter-- == 0){
+			Error_Handler();
+		}
+	}
+	if(HAL_UART_DMAStop(huart485) ) //stop again to prevent errors
+	{
+	  Error_Handler();
+	}
+	if(HAL_UART_Receive_DMA(huart485, (uint8_t *)UARTBuffer0, BUFSIZE) != HAL_OK) 	//Start receiving
+	{
+	  Error_Handler();
+	}
+
 
 }
 
