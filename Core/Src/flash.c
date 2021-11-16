@@ -123,7 +123,8 @@ void eraseApp() {
 
 void flash_write_boot(unsigned int write_address, unsigned int size) {
 
-	if (Address_old >= write_address){ // Before retrying flash write, erase sector!
+
+	if (Address_old >= write_address && write_address != FLASH_APP_VERSION_ADDR){ // Before retrying flash write, erase sector!
 		//uint32_t start_sector = (write_address/FLASH_PAGE_SIZE) /2;
 		//flash_erase(start_sector, start_sector+1 );
 		Address_old = write_address;
@@ -155,18 +156,23 @@ void flash_write_boot(unsigned int write_address, unsigned int size) {
   //Write flash row by row
   while (Address < (write_address + size) )
   {
-    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, Address, *(flash_backup_dw++)) == HAL_OK)
-    {
-      Address = Address + sizeof(uint64_t);
-    }
-   else
-    {
-      /* Error occurred while writing data in Flash memory.*/
-      tracker_status |= SYS_PARAM_FLASH_ERR;
-      flashError = HAL_FLASH_GetError();
-      UARTBuffer0[2] = ACK_ERROR;
-      Error_Handler();
-    }
+	if(*(flash_backup_dw) != 0xffffffffffffffff){ // flash written by 0xff seems to be unable to over-writen (ECCR bits?)
+		if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, Address, *(flash_backup_dw++)) == HAL_OK)
+		{
+		  Address = Address + sizeof(uint64_t);
+		}
+	   else
+		{
+		  /* Error occurred while writing data in Flash memory.*/
+		  tracker_status |= SYS_PARAM_FLASH_ERR;
+		  flashError = HAL_FLASH_GetError();
+		  UARTBuffer0[2] = ACK_ERROR;
+		  Error_Handler();
+		}
+	}else{
+		flash_backup_dw++;
+		Address = Address + sizeof(uint64_t);
+	}
   }
 
   if(memcmp((char*)write_address, (char *)&UARTBuffer0[8], size))

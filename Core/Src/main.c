@@ -519,7 +519,7 @@ void modbus_cmd () {
     module.packetReady = 0;
   }
 
-  if(UARTCount0 == 0x13 || UARTCount0 == 0x93 || UARTCount0 == 0x113)
+  if(UARTCount0 == 0x13 || UARTCount0 == 0x93 || UARTCount0 == 0x73 || UARTCount0 == 0x113)
     crypdedRx = RX_MODE_CRYPTED;
   else
     crypdedRx = RX_MODE_NORMAL;
@@ -604,8 +604,12 @@ void modbus_cmd () {
               UARTBuffer0[2] = ACK_ERROR;
             }
             else
-              if (upgMode == CRC_MODE_UPGRADE && crypdedRx == RX_MODE_CRYPTED)
+              if (upgMode == CRC_MODE_UPGRADE && crypdedRx == RX_MODE_CRYPTED){
+            	if(addr == FLASH_APP_VERSION_ADDR){	//Write version after upgrade
+            		size = 0x10;
+            	}
                 flash_write_boot(addr, size);
+              }
             break;
           }
           //GET CHECKSUM
@@ -695,7 +699,7 @@ TX:
         wait_appl_cnt = WAIT_TO_APPL2;          //ponovno cakaj timeout preden gres v applikacijo
 		//	bootled_cnt=0;                        //zacni utripanje oranzne LED
         if (flags&(1<<reset_it)){
-            while(1);    //reset ukaz - pocakaj na wdt reset
+        	HAL_NVIC_SystemReset();
         }
 	}
       else UARTCount0 = 0;
