@@ -10,7 +10,7 @@
 
 uint8_t bufGlbFirst[256];
 uint8_t USB_rxBuff[100];
-uint8_t USB_rxCount;
+uint16_t USB_rxCount;
 uint8_t USB_upgradeBuff[256];
 uint8_t StartUpgrade = 0;
 uint8_t receviedPartIndex = 0;
@@ -67,7 +67,7 @@ void USB_write(void) {
     // writing 2nd and other sectors
     if(addrToWrite > sys_defs.FLASH_APP_START_ADDRESS) {
       if(enableUpgrade){
-    	  if(flash_write_upgrade(addrToWrite, USB_upgradeBuff, USB_rxCount)){
+    	  if(flash_write_upgrade(addrToWrite, USB_upgradeBuff, 0x100)){
     		  send_back = USB_RESPONSE_ERROR;
     	  }
       }

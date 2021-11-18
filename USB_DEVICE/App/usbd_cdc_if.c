@@ -33,7 +33,7 @@
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 extern uint8_t USB_rxBuff[100];
-extern uint8_t USB_rxCount;
+extern uint16_t USB_rxCount;
 /* USER CODE END PV */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -280,7 +280,6 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 	receviedPartIndex++;
 	if(receviedPartIndex == 4){
 		receviedPartIndex = 0;
-		USB_rxCount -= 1; //256 = 00, -1 = 0xff
 	}
 	USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &USB_rxBuff[0]);
 	USBD_CDC_ReceivePacket(&hUsbDeviceFS);
