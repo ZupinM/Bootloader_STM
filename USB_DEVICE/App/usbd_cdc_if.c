@@ -32,7 +32,8 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+extern uint8_t USB_rxBuff[100];
+extern uint8_t USB_rxCount;
 /* USER CODE END PV */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -110,7 +111,7 @@ uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
-
+USBD_HandleTypeDef * hUsbDevice_0;
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**
@@ -153,9 +154,10 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 static int8_t CDC_Init_FS(void)
 {
   /* USER CODE BEGIN 3 */
+	hUsbDevice_0 = &hUsbDeviceFS;
   /* Set Application Buffers */
   USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, 0);
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
+  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &USB_rxBuff[0]);
   return (USBD_OK);
   /* USER CODE END 3 */
 }
@@ -167,6 +169,7 @@ static int8_t CDC_Init_FS(void)
 static int8_t CDC_DeInit_FS(void)
 {
   /* USER CODE BEGIN 4 */
+  hUsbDevice_0 = NULL;
   return (USBD_OK);
   /* USER CODE END 4 */
 }
@@ -259,13 +262,30 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   * @param  Len: Number of data received (in bytes)
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
   */
+
+//#include "../../Core/Src/RTT/SEGGER_RTT.h"
+extern uint8_t receviedPartIndex;
+extern uint16_t LastPacketTimeout;
+extern uint8_t USB_upgradeBuff[256];
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
-  /* USER CODE BEGIN 6 */
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
-  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-  return (USBD_OK);
-  /* USER CODE END 6 */
+	/* USER CODE BEGIN 6 */
+	if(receviedPartIndex == 0){
+		USB_rxCount = 0;
+	}
+	USB_rxCount += *Len;
+	LastPacketTimeout=0;
+	memcpy(&USB_upgradeBuff[receviedPartIndex*64], USB_rxBuff, *Len);
+	//SEGGER_RTT_printf(0, " %#02x %#02x %#02x %#02x %#02x %#02x l:%d i:%d\n" , USB_rxBuff[0], USB_rxBuff[1], USB_rxBuff[2], USB_rxBuff[3], USB_rxBuff[4], USB_rxBuff[5], USB_rxCount, receviedPartIndex);
+	receviedPartIndex++;
+	if(receviedPartIndex == 4){
+		receviedPartIndex = 0;
+		USB_rxCount -= 1; //256 = 00, -1 = 0xff
+	}
+	USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &USB_rxBuff[0]);
+	USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+	return (USBD_OK);
+	/* USER CODE END 6 */
 }
 
 /**
@@ -283,7 +303,11 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 7 */
-  USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+  if (hUsbDevice_0 == NULL){
+      return -1;
+  }
+	USBD_CDC_HandleTypeDef *hcdc =
+			(USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
   if (hcdc->TxState != 0){
     return USBD_BUSY;
   }

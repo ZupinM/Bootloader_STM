@@ -106,7 +106,7 @@ void read_SysVars(unsigned int addr);
 void modbus_cmd (void);
 void modbus_crc(int length, int mode);
 void flash_read_boot (unsigned int read_address, unsigned int size);
-void flash_write_boot(unsigned int write_address, unsigned int size);
+void flash_write_boot(unsigned int write_address, volatile uint8_t* flash_write_buffer, unsigned int size);
 void flash_erase(unsigned int start_sector, unsigned int stop_sector);
 void eraseApp();
 void writeApp(unsigned int address, unsigned int size);

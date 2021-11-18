@@ -24,6 +24,7 @@
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
+#include "usb.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -134,6 +135,7 @@ volatile unsigned int start_count = 0;
 uint8_t init_main_state = 1;
 
 extern volatile unsigned int number_of_poles;
+extern int enableUpgrade;
 
 //fixed loaction in flash for version and checksum
 __attribute__ ((section (".appver")))
@@ -336,6 +338,8 @@ int main(void)
 	     systick_ms=0;       // execute every 1ms
 
 	     if (--wait_appl_cnt == 0) {
+	    	 MX_USB_DEVICE_DeInit();
+	    	 enableUpgrade = 0;
 	    	 go2APP();
 	    	 wait_appl_cnt = WAIT_TO_APPL2; // else wait
 	     }
@@ -387,7 +391,7 @@ int main(void)
 	       }
 	     }else if(modbus_newRequest() && (huart485->gState != HAL_UART_STATE_BUSY && huart485->RxState != HAL_UART_STATE_BUSY_RX ) ){
 	    	 //save_to_buffer(UARTBuffer0, 8);
-	         SEGGER_RTT_printf(0, "id:%#02x  cmd:%#02x %#02x %#02x %#02x %#02x %#02x %#02x %#02x l:%d\n" , UARTBuffer0[0], UARTBuffer0[1], UARTBuffer0[2], UARTBuffer0[3], UARTBuffer0[4], UARTBuffer0[5], UARTBuffer0[6], UARTBuffer0[7], UARTBuffer0[8], UARTCount0);
+	         //SEGGER_RTT_printf(0, "id:%#02x  cmd:%#02x %#02x %#02x %#02x %#02x %#02x %#02x %#02x l:%d\n" , UARTBuffer0[0], UARTBuffer0[1], UARTBuffer0[2], UARTBuffer0[3], UARTBuffer0[4], UARTBuffer0[5], UARTBuffer0[6], UARTBuffer0[7], UARTBuffer0[8], UARTCount0);
 
 		     // MODBUS RS485
 		       modbus_cmd();
@@ -395,6 +399,7 @@ int main(void)
 		       reEnable_485_DMA_RX();
 		 }
 
+	     USB_write();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -610,7 +615,7 @@ void modbus_cmd () {
             	if(addr == FLASH_APP_VERSION_ADDR){	//Write version after upgrade
             		size = 0x10;
             	}
-                flash_write_boot(addr, size);
+                flash_write_boot(addr, UARTBuffer0, size);
               }
             break;
           }

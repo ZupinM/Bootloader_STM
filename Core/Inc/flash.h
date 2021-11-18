@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "usart.h"
+#include "usb.h"
 #ifdef APPLICATION
   #include "main.h"
 #else

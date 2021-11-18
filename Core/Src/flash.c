@@ -121,25 +121,26 @@ void eraseApp() {
 	  return;
 }
 
-void flash_write_boot(unsigned int write_address, unsigned int size) {
+void flash_write_boot(unsigned int write_address, volatile uint8_t* flash_write_buffer, unsigned int size) {
 
 
-	if (Address_old >= write_address && write_address != FLASH_APP_VERSION_ADDR){ // Before retrying flash write, erase sector!
+	if (Address_old >= write_address && write_address != FLASH_APP_VERSION_ADDR){
 		//uint32_t start_sector = (write_address/FLASH_PAGE_SIZE) /2;
 		//flash_erase(start_sector, start_sector+1 );
 		Address_old = write_address;
 		return;
 	}
 	Address_old = write_address;
-
-    if(crypdedRx == RX_MODE_NORMAL) { // uncrypted mode - crypted file
-      if (decryptData ((char *)&UARTBuffer0[8], size) != 0){
-    	  UARTBuffer0[2] = ACK_ERROR;
+	uint8_t addr_offset = 8;
+    if(crypdedRx == RX_MODE_NORMAL) { // USB upgrade
+      addr_offset = 0;
+      if (decryptData ((char *)flash_write_buffer, size) != 0){
+    	  USART_To_USB_Send_Data(USB_RESPONSE_ERROR, 1);
     	  return;
       }
       else {
         if (size < 0x100) { // complete last write sector with 0xFF
-          memset((char *)&UARTBuffer0[size + 8], 0xFF, 0x108 - size);
+          memset((char *)&flash_write_buffer[size], 0xFF, 0x100 - size);
         }
       }
     }
@@ -150,7 +151,7 @@ void flash_write_boot(unsigned int write_address, unsigned int size) {
   /* Clear OPTVERR bit set on virgin samples */
     __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
 
-   uint64_t* flash_backup_dw = (uint64_t*)(UARTBuffer0+8); //Double word
+   uint64_t* flash_backup_dw = (uint64_t*)(flash_write_buffer+addr_offset); //Double word
    unsigned int Address = write_address;
 
   //Write flash row by row
@@ -166,7 +167,7 @@ void flash_write_boot(unsigned int write_address, unsigned int size) {
 		  /* Error occurred while writing data in Flash memory.*/
 		  tracker_status |= SYS_PARAM_FLASH_ERR;
 		  flashError = HAL_FLASH_GetError();
-		  UARTBuffer0[2] = ACK_ERROR;
+		  flash_write_buffer[2] = ACK_ERROR;
 		  Error_Handler();
 		}
 	}else{
@@ -175,10 +176,16 @@ void flash_write_boot(unsigned int write_address, unsigned int size) {
 	}
   }
 
-  if(memcmp((char*)write_address, (char *)&UARTBuffer0[8], size))
-    UARTBuffer0[2] = ACK_ERROR;
+  if(crypdedRx == RX_MODE_NORMAL) {
+	  if(memcmp((char*)write_address, (char*)flash_write_buffer, size)){
+		  USART_To_USB_Send_Data(USB_RESPONSE_ERROR, 1);
+	  }
+	  return;
+  }
+  if(memcmp((char*)write_address, (char *)&flash_write_buffer[8], size))
+	  flash_write_buffer[2] = ACK_ERROR;
   else
-    UARTBuffer0[2] = ACK_OK;
+	  flash_write_buffer[2] = ACK_OK;
   return;
 
 }
