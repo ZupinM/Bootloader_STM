@@ -40,9 +40,6 @@ void USB_write(void) {
 			return;
 		}
 	}
-	USB_rxCount = 0;
-	wait_appl_cnt = WAIT_TO_APPL;
-
     if(addrToWrite == 0) {
       addrToWrite = sys_defs.FLASH_APP_START_ADDRESS;
       memcpy(bufGlbFirst, USB_upgradeBuff, 0x100);
@@ -50,7 +47,7 @@ void USB_write(void) {
     else{
       addrToWrite += 0x100;
     }
-
+    send_back = USB_RESPONSE_OK;
     if(addrToWrite == sys_defs.FLASH_APP_START_ADDRESS + 0x100) {
       // checking version type MICRO
       char bufGlbVCheck[16];
@@ -60,7 +57,9 @@ void USB_write(void) {
         if(pVer / 1000 == sys_defs.DEV_TYPE){
         	enableUpgrade = 1;
             eraseApp();	// erasing and writing 1st sector
-            flash_write_boot(sys_defs.FLASH_APP_START_ADDRESS, bufGlbFirst, 0x100);
+            if(flash_write_upgrade(sys_defs.FLASH_APP_START_ADDRESS, bufGlbFirst, 0x100)){
+            	send_back = USB_RESPONSE_ERROR;
+            }
         }
       }
     }
@@ -68,10 +67,13 @@ void USB_write(void) {
     // writing 2nd and other sectors
     if(addrToWrite > sys_defs.FLASH_APP_START_ADDRESS) {
       if(enableUpgrade){
-      	flash_write_boot(addrToWrite, USB_upgradeBuff, 0x100);
+    	  if(flash_write_upgrade(addrToWrite, USB_upgradeBuff, USB_rxCount)){
+    		  send_back = USB_RESPONSE_ERROR;
+    	  }
       }
     }
-
+    USB_rxCount = 0;
+    wait_appl_cnt = WAIT_TO_APPL;
     USART_To_USB_Send_Data(&send_back, 1);
 
 }

@@ -172,6 +172,7 @@ uint8_t tx_packet_buffer[BUFSIZE];
 uint32_t tx_packet_length;
 uint8_t SPI_RxFifo_cmplt;
 uint8_t SPI_TxFifo_cmplt;
+uint8_t LoRa_firstVerPacket_received;
 
 uint16_t online_timeouts[165];
 uint8_t available_positioners[20];
@@ -515,7 +516,6 @@ void led_handling() {
 /***********************************************************
   MODBUS COMMANDS
 ************************************************************/
-int tmp_addr = 0;
 void modbus_cmd () {
 
   unsigned int Utemp;
@@ -525,8 +525,8 @@ void modbus_cmd () {
     UARTCount0 = module.packetLength;
     module.packetReady = 0;
   }
-
-  if(UARTCount0 == 0x13 || UARTCount0 == 0x93 || UARTCount0 == 0x73 || UARTCount0 == 0x113)
+  //0x43: LoRa write version, 73: 485 write version
+  if(UARTCount0 == 0x13 || UARTCount0 == 0x93 || UARTCount0 == 0x73|| UARTCount0 == 0x43 || UARTCount0 == 0x113)
     crypdedRx = RX_MODE_CRYPTED;
   else
     crypdedRx = RX_MODE_NORMAL;
@@ -538,13 +538,6 @@ void modbus_cmd () {
       upgMode = CRC_MODE_UPGRADE;
       modbus_crc (UARTCount0, upgMode);
     }
-
-	/*if(Address_old == 0x1f200){
-		if(tmp_addr++){
-			tmp_addr = 0;
-			HAL_Delay(1);
-		}
-	}*/
 
     // disable reset, status (0x01, 0x06 lenght 4) and get all params (0x78) command - only from product
     if ((crc_calc == 0 && crypdedRx == RX_MODE_CRYPTED) || (crc_calc == 0 && UARTBuffer0[1] != 0x78 && crypdedRx == RX_MODE_NORMAL)) {
@@ -607,15 +600,19 @@ void modbus_cmd () {
           }
           //WRITE
           case CMD_WRITE: {
-            if (addr < 0x3000) {         					//ne sme iti pod 3 sektor - bootloader koda
+            if (addr < (FLASH_APP_START_ADDR&0xfffff)) {         					//ne sme iti pod 3 sektor - bootloader koda
               UARTBuffer0[2] = ACK_ERROR;
             }
             else
               if (upgMode == CRC_MODE_UPGRADE && crypdedRx == RX_MODE_CRYPTED){
+            	if(LoRa_firstVerPacket_received && addr > FLASH_APP_VERSION_ADDR){
+            		break; //Discard second packet of version write on LoRa
+            	}
             	if(addr == FLASH_APP_VERSION_ADDR){	//Write version after upgrade
             		size = 0x10;
+            		LoRa_firstVerPacket_received = 1;
             	}
-                flash_write_boot(addr, UARTBuffer0, size);
+            	UARTBuffer0[2] = flash_write_upgrade(addr, UARTBuffer0, size);
               }
             break;
           }

@@ -121,22 +121,18 @@ void eraseApp() {
 	  return;
 }
 
-void flash_write_boot(unsigned int write_address, volatile uint8_t* flash_write_buffer, unsigned int size) {
-
+uint8_t flash_write_upgrade(unsigned int write_address, volatile uint8_t* flash_write_buffer, unsigned int size) {
 
 	if (Address_old >= write_address && write_address != FLASH_APP_VERSION_ADDR){
-		//uint32_t start_sector = (write_address/FLASH_PAGE_SIZE) /2;
-		//flash_erase(start_sector, start_sector+1 );
 		Address_old = write_address;
-		return;
+		return ACK_OK; //Packet was resent by sigma, but write was probably ok
 	}
 	Address_old = write_address;
 	uint8_t addr_offset = 8;
     if(crypdedRx == RX_MODE_NORMAL) { // USB upgrade
       addr_offset = 0;
       if (decryptData ((char *)flash_write_buffer, size) != 0){
-    	  USART_To_USB_Send_Data(USB_RESPONSE_ERROR, 1);
-    	  return;
+    	  return ACK_ERROR;
       }
       else {
         if (size < 0x100) { // complete last write sector with 0xFF
@@ -157,7 +153,7 @@ void flash_write_boot(unsigned int write_address, volatile uint8_t* flash_write_
   //Write flash row by row
   while (Address < (write_address + size) )
   {
-	if(*(flash_backup_dw) != 0xffffffffffffffff){ // flash written by 0xff seems to be unable to over-writen (ECCR bits?)
+	if(*(flash_backup_dw) != 0xffffffffffffffff){ // flash written by 0xff seems to be unable to be over-writen (ECCR bits?), skip writing 0xff dwords
 		if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, Address, *(flash_backup_dw++)) == HAL_OK)
 		{
 		  Address = Address + sizeof(uint64_t);
@@ -167,7 +163,7 @@ void flash_write_boot(unsigned int write_address, volatile uint8_t* flash_write_
 		  /* Error occurred while writing data in Flash memory.*/
 		  tracker_status |= SYS_PARAM_FLASH_ERR;
 		  flashError = HAL_FLASH_GetError();
-		  flash_write_buffer[2] = ACK_ERROR;
+		  return ACK_ERROR;
 		  Error_Handler();
 		}
 	}else{
@@ -176,70 +172,14 @@ void flash_write_boot(unsigned int write_address, volatile uint8_t* flash_write_
 	}
   }
 
-  if(crypdedRx == RX_MODE_NORMAL) {
-	  if(memcmp((char*)write_address, (char*)flash_write_buffer, size)){
-		  USART_To_USB_Send_Data(USB_RESPONSE_ERROR, 1);
-	  }
-	  return;
+  if(memcmp((char*)write_address, (char *)&flash_write_buffer[addr_offset], size)){
+	  return ACK_ERROR;
   }
-  if(memcmp((char*)write_address, (char *)&flash_write_buffer[8], size))
-	  flash_write_buffer[2] = ACK_ERROR;
-  else
-	  flash_write_buffer[2] = ACK_OK;
-  return;
+  else{
+	  return ACK_OK;
+  }
 
 }
-
-/*void writeApp(unsigned int address, unsigned int size) {
-  unsigned int write_address = sys_defs.FLASH_APP_START_ADDRESS + address;
-  unsigned int sector = write_address / 0x1000;
-
-  __disable_irq();
-
-  //prepare sectors
-  command[0] = 50;                                     // ukaz "prepare"
-  command[1] = sector;                                 // zacetni sektor
-  command[2] = sector;                                 // koncni sektor
-  iap_entry (command, result);
-  while (result[0])
-  goto iap_error;
-
-  //write
-  command[0] = 51;                                    // ukaz "write"
-
-
-  if(crypdedRx == RX_MODE_NORMAL) { // uncrypted mode - crypted file
-    if (decryptData ((char *)&UARTBuffer0[8], size) != 0)
-      goto iap_error;
-    else {
-      if (size < 0x100) { // complete last write sector with 0xFF
-        memset((char *)&UARTBuffer0[size + 8], 0xFF, 0x108 - size);
-        size = 0x100;
-      }
-    }
-  }
-
-  command[1] = write_address;                       // address
-  command[3] = size;                                // dovoljene vrednosti 256, 512, 1024, (4096)
-
-  command[2] = (unsigned int)&UARTBuffer[8];
-  command[4] = 48000;                                   // 48.000kHz main clock
-  iap_entry (command, result);
-  while (result[0]) goto iap_error;
-
-  __enable_irq();
-
-  if(memcmp((char*)write_address, (char *)&UARTBuffer[8], size))
-    UARTBuffer[2] = ACK_ERROR;
-  else
-    UARTBuffer[2] = ACK_OK;
-  return;
-
-iap_error:                                          // napaka pri zapisu v flash
-  UARTBuffer[2] = ACK_ERROR;                        // ACK odgovor
-  __enable_irq();
-  return;
-}*/
 
 void flash_checksum (unsigned int start_address, unsigned int size) {
 
