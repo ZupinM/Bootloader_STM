@@ -86,6 +86,7 @@ void flash_erase(unsigned int start_sector, unsigned int stop_sector) {
 	  EraseInitStruct.Page        = start_page;
 	  EraseInitStruct.NbPages     = (stop_sector * 2) - start_page;
 	  Address_old = 0;
+	  IWDG_ChangeSpeed(IWDG_PRESCALER_64);
 
 	  if( HAL_FLASHEx_Erase(&EraseInitStruct, &PAGEError) != HAL_OK){
 	     tracker_status |= SYS_PARAM_FLASH_ERR;
@@ -94,6 +95,7 @@ void flash_erase(unsigned int start_sector, unsigned int stop_sector) {
 	  }else{
 		  UARTBuffer0[2] = ACK_OK;
 	  }
+	  IWDG_ChangeSpeed(IWDG_PRESCALER_8);
 	  return;
 }
 
@@ -109,7 +111,8 @@ void eraseApp() {
 	  EraseInitStruct.TypeErase   = FLASH_TYPEERASE_PAGES;
 	  EraseInitStruct.Banks       = FLASH_BANK_1;
 	  EraseInitStruct.Page        = FLASH_APP_START_ADDR / FLASH_PAGE_SIZE; //page_size: 0x800 (STM),  sector_size: 0x1000 (LPC)
-	  EraseInitStruct.NbPages     = FLASH_APP_SIZE_ / FLASH_PAGE_SIZE;
+	  EraseInitStruct.NbPages     = FLASH_APP_SIZE_ACTUAL / FLASH_PAGE_SIZE;
+	  IWDG_ChangeSpeed(IWDG_PRESCALER_64);
 
 	  if( HAL_FLASHEx_Erase(&EraseInitStruct, &PAGEError) != HAL_OK){
 	     tracker_status |= SYS_PARAM_FLASH_ERR;
@@ -118,6 +121,7 @@ void eraseApp() {
 	  }else{
 		  UARTBuffer0[2] = ACK_OK;
 	  }
+	  IWDG_ChangeSpeed(IWDG_PRESCALER_8);
 	  return;
 }
 

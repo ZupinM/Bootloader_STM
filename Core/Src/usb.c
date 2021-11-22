@@ -35,9 +35,13 @@ void USART_To_USB_Send_Data(uint8_t* ascii_string, uint32_t count_in){
 ************************************************************/
 void USB_write(void) {
 
-	if (USB_rxCount<255){	//New data received
-		if(!(LastPacketTimeout++ > 200 && USB_rxCount > 0)){ //Last packed received (smaller than 255)
-			return;
+	if (USB_rxCount<255){	//else New data received
+		if(USB_rxCount > 0 && enableUpgrade){
+			if(LastPacketTimeout++ < 200){ //Last upgrade packed received (smaller than 255)
+				return;
+			}
+		}else{
+			return; // Packets smaller than upgrade packets rejected when not in upgrade mode
 		}
 	}
     if(addrToWrite == 0) {
@@ -60,10 +64,13 @@ void USB_write(void) {
             if(flash_write_upgrade(sys_defs.FLASH_APP_START_ADDRESS, bufGlbFirst, 0x100)){
             	send_back = USB_RESPONSE_ERROR;
             }
+        }else{
+        	send_back = USB_RESPONSE_ERROR;
         }
+      }else{
+    	  send_back = USB_RESPONSE_ERROR;
       }
     }
-
     // writing 2nd and other sectors
     if(addrToWrite > sys_defs.FLASH_APP_START_ADDRESS) {
       if(enableUpgrade){
@@ -75,5 +82,10 @@ void USB_write(void) {
     USB_rxCount = 0;
     wait_appl_cnt = WAIT_TO_APPL;
     USART_To_USB_Send_Data(&send_back, 1);
+
+    if(send_back == USB_RESPONSE_ERROR){
+    	addrToWrite = 0;
+    	enableUpgrade = 0;
+    }
 
 }

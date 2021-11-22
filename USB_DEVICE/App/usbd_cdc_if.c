@@ -64,6 +64,11 @@ extern uint16_t USB_rxCount;
   */
 
 /* USER CODE BEGIN PRIVATE_DEFINES */
+
+#include "../../Core/Src/RTT/SEGGER_RTT.h"
+extern uint8_t receviedPartIndex;
+extern uint16_t LastPacketTimeout;
+extern uint8_t USB_upgradeBuff[256];
 /* USER CODE END PRIVATE_DEFINES */
 
 /**
@@ -262,29 +267,24 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   * @param  Len: Number of data received (in bytes)
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
   */
-
-//#include "../../Core/Src/RTT/SEGGER_RTT.h"
-extern uint8_t receviedPartIndex;
-extern uint16_t LastPacketTimeout;
-extern uint8_t USB_upgradeBuff[256];
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
-	/* USER CODE BEGIN 6 */
-	if(receviedPartIndex == 0){
-		USB_rxCount = 0;
-	}
-	USB_rxCount += *Len;
-	LastPacketTimeout=0;
-	memcpy(&USB_upgradeBuff[receviedPartIndex*64], USB_rxBuff, *Len);
-	//SEGGER_RTT_printf(0, " %#02x %#02x %#02x %#02x %#02x %#02x l:%d i:%d\n" , USB_rxBuff[0], USB_rxBuff[1], USB_rxBuff[2], USB_rxBuff[3], USB_rxBuff[4], USB_rxBuff[5], USB_rxCount, receviedPartIndex);
-	receviedPartIndex++;
-	if(receviedPartIndex == 4){
-		receviedPartIndex = 0;
+  /* USER CODE BEGIN 6 */
+	if(!(receviedPartIndex == 0 && *Len < 64)){ //Don't count packets that are not for upgrade
+		if(receviedPartIndex == 4){
+			receviedPartIndex = 0;
+			USB_rxCount = 0;
+		}
+		USB_rxCount += *Len;
+		LastPacketTimeout=0;
+		memcpy(&USB_upgradeBuff[receviedPartIndex*64], USB_rxBuff, *Len);
+		//SEGGER_RTT_printf(0, " %#02x %#02x %#02x %#02x %#02x %#02x l:%d i:%d\n" , USB_rxBuff[0], USB_rxBuff[1], USB_rxBuff[2], USB_rxBuff[3], USB_rxBuff[4], USB_rxBuff[5], USB_rxCount, receviedPartIndex);
+		receviedPartIndex++;
 	}
 	USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &USB_rxBuff[0]);
 	USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 	return (USBD_OK);
-	/* USER CODE END 6 */
+  /* USER CODE END 6 */
 }
 
 /**

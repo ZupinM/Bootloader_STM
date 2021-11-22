@@ -20,11 +20,11 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "dma.h"
+#include "iwdg.h"
 #include "spi.h"
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
-#include "usb.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -56,7 +56,6 @@
 typedef void (*ptrF)(uint32_t dlyticks);
 typedef void (*pFunction)(void);
 
-#define FLASH_APP_ADDR 0x801f000
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -136,20 +135,8 @@ uint8_t init_main_state = 1;
 
 extern volatile unsigned int number_of_poles;
 extern int enableUpgrade;
-
-//fixed loaction in flash for version and checksum
-__attribute__ ((section (".appver")))
-//fsta
-const Version swVersion={.sw_version=8001,
-                         .blank1=0xffff,
-                         .blank2=0xffff,
-                         .blank3=0xffff,
-                         .blank4=0xffff,
-                         .blank5=0xffff,
-                         .blank6=0xffff,
-                         .blank7=0xffff,
-                         .blank8=0xffff
-                         };
+extern unsigned int addrToWrite;
+extern uint8_t receviedPartIndex;
 
 uint8_t usbcnt = 0;
 
@@ -196,8 +183,8 @@ const  system_defs_t sys_defs =   {
 	1,    //HW_REV;
 	8,    //DEV_TYPE;        //ne spreminjaj
 	8000,  //DEV_MIN_VERSION;
-    0x61000,  //FLASH_APP_SIZE;
-    0x1f000   // FLASH_APP_START_ADDRESS;
+    0x70800,  //FLASH_APP_SIZE;
+    0xf800   // FLASH_APP_START_ADDRESS;
 };
 #endif
 
@@ -232,18 +219,21 @@ void go2APP(void)
 {
 	uint32_t JumpAddress;
 	pFunction Jump_To_Application;
-	printf("BOOTLOADER Start\r\n");
+	//printf("BOOTLOADER Start\r\n");
 
 	//check if there is something "installed" in the app FLASH region
-	if(((*(__IO uint32_t*) FLASH_APP_ADDR) & 0x2FFC0000) == 0x20000000)
+	if(((*(__IO uint32_t*) FLASH_APP_START_ADDR) & 0x2FFC0000) == 0x20000000)
 	{
-		printf("APP Start ...\r\n");
-		HAL_Delay(100);
+		IWDG_ChangeSpeed(IWDG_PRESCALER_32);
+		MX_USB_DEVICE_DeInit();
+		//__disable_irq();
+		SysTick->CTRL = 0;
+		//printf("APP Start ...\r\n");
 		//jump to the application
-		JumpAddress = *(uint32_t *) (FLASH_APP_ADDR + 4);
+		JumpAddress = *(uint32_t *) (FLASH_APP_START_ADDR + 4);
 		Jump_To_Application = (pFunction) JumpAddress;
 		//initialize application's stack pointer
-		__set_MSP(*(uint32_t *)FLASH_APP_ADDR);
+		__set_MSP(*(uint32_t *)FLASH_APP_START_ADDR);
 		Jump_To_Application();
 	}
 	else
@@ -287,8 +277,10 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_USB_DEVICE_Init();
+  //MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_IWDG_Refresh(&hiwdg); //Reset watchdog timer
 #ifdef PRODUCTION_RELEASE 					//Code Read Protection
   FLASH_OBProgramInitTypeDef CRP_settings;
   HAL_FLASH_Unlock();
@@ -337,10 +329,12 @@ int main(void)
 	     if (systick_ms != 1)
 	       continue;
 	     systick_ms=0;       // execute every 1ms
+	     HAL_IWDG_Refresh(&hiwdg); //Reset watchdog timer
 
 	     if (--wait_appl_cnt == 0) {
-	    	 MX_USB_DEVICE_DeInit();
 	    	 enableUpgrade = 0;
+	    	 addrToWrite = 0;
+	    	 receviedPartIndex = 0;
 	    	 go2APP();
 	    	 wait_appl_cnt = WAIT_TO_APPL2; // else wait
 	     }
@@ -430,8 +424,10 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSE|RCC_OSCILLATORTYPE_MSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_LSE
+                              |RCC_OSCILLATORTYPE_MSI;
   RCC_OscInitStruct.LSEState = RCC_LSE_ON;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.MSIState = RCC_MSI_ON;
   RCC_OscInitStruct.MSICalibrationValue = 0;
   RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
@@ -521,7 +517,7 @@ void modbus_cmd () {
   unsigned int Utemp;
 
   if(transceiver == LORA){
-    memcpy((uint8_t *)UARTBuffer0, (uint8_t *)module.rxBuffer, BUFSIZE);
+    memcpy((uint8_t *)UARTBuffer0, (uint8_t *)module.rxBuffer, LoRa_MAX_PACKET);
     UARTCount0 = module.packetLength;
     module.packetReady = 0;
   }
@@ -659,7 +655,7 @@ void modbus_cmd () {
             break;
           }
           case CMD_GET_VERSION: {
-            flash_read_boot (FLASH_APP_ADDR, 3);
+            flash_read_boot (FLASH_APP_START_ADDR, 3);
             break;
           }
 

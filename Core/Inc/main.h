@@ -167,7 +167,7 @@ void set_tx_flag(uint8_t* tx_buffer, uint8_t length);
 #define PICO  9
 //#define DEVICE KVARK
 
-#define WAIT_TO_APPL 6000
+#define WAIT_TO_APPL 5000
 #define WAIT_TO_APPL2 60000
 
 #define set                 1

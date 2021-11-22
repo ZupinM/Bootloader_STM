@@ -14,6 +14,7 @@
 #include "usb_device.h"
 #include "usbd_cdc_if.h"
 #include "flash.h"
+#include "iwdg.h"
 
 
 #define USB_RESPONSE_OK 0x11
