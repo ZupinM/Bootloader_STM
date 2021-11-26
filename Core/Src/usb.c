@@ -20,6 +20,7 @@ uint8_t send_back=USB_RESPONSE_OK;
 extern unsigned int wait_appl_cnt;
 extern const  system_defs_t sys_defs;
 int enableUpgrade = 0;
+extern unsigned int crypdedRx;
 
 
 void USART_To_USB_Send_Data(uint8_t* ascii_string, uint32_t count_in){
@@ -52,13 +53,14 @@ void USB_write(void) {
       addrToWrite += 0x100;
     }
     send_back = USB_RESPONSE_OK;
+    crypdedRx = RX_MODE_NORMAL; //Decrypt in write function
     if(addrToWrite == sys_defs.FLASH_APP_START_ADDRESS + 0x100) {
       // checking version type MICRO
       char bufGlbVCheck[16];
       memcpy(bufGlbVCheck, &USB_upgradeBuff[FLASH_APP_VERSION_ADDR & 0xff], 0x10);
       if (decryptData (bufGlbVCheck, 0x10) == 0) {
         int pVer = bufGlbVCheck[0] + 0x100 * bufGlbVCheck[1];
-        if(pVer / 1000 == sys_defs.DEV_TYPE){
+        if(pVer / 1000 == sys_defs.DEV_TYPE || pVer == sys_defs.DEV_TYPE){ //firmware or bootFlasher
         	enableUpgrade = 1;
             eraseApp();	// erasing and writing 1st sector
             if(flash_write_upgrade(sys_defs.FLASH_APP_START_ADDRESS, bufGlbFirst, 0x100)){

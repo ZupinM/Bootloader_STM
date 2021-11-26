@@ -33,9 +33,6 @@ Header file za SunTracer
 #define LED_ON  1
 #define COUNTDOWN 2
 
-//#define SYS_VARS_ADDR	0x0003F000
-//#define SYS_VARS_ADDR1	0x0003F400
-
 #define ROUTE_ADDR      0x100
 
 #define MIN_SLAVE_ADDR  1

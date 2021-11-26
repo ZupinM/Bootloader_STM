@@ -36,7 +36,7 @@
 #include <ctype.h>
 #include "Shared_Libraries/config.h"
 #include "RTT/SEGGER_RTT.h"
-#include "flash.h"
+#include "../../../Micro/Core/Inc/flash.h"
 
 //#define PRODUCTION_RELEASE
 
@@ -176,17 +176,15 @@ float *f_flash_pointer;					//kazalec za branje po flash-u
 unsigned int *i_flash_pointer;			//kazalec za branje po flash-u
 unsigned int crypdedRx = RX_MODE_NORMAL;
 
-#if (DEVICE == MICRO)
 __attribute__ ((section (".sysdata")))
 const  system_defs_t sys_defs =   {
-	8001, //LOADER_VER;
+	BOOT_VER, //LOADER_VER;
 	1,    //HW_REV;
-	8,    //DEV_TYPE;        //ne spreminjaj
+	DEVICE,    //DEV_TYPE;        //ne spreminjaj
 	8000,  //DEV_MIN_VERSION;
-    0x70800,  //FLASH_APP_SIZE;
-    0xf800   // FLASH_APP_START_ADDRESS;
+    FLASH_APP_SIZE_ACTUAL,  //FLASH_APP_SIZE;
+	(FLASH_APP_START_ADDR&0xfffff)   // FLASH_APP_START_ADDRESS;
 };
-#endif
 
 extern volatile uint8_t UARTBuffer0[BUFSIZE];
 volatile uint8_t rs485_forward_enabled;
@@ -226,6 +224,8 @@ void go2APP(void)
 	{
 		IWDG_ChangeSpeed(IWDG_PRESCALER_32);
 		MX_USB_DEVICE_DeInit();
+		HAL_UART_MspDeInit(huart485);
+		HAL_SPI_MspDeInit(&hspi3);
 		//__disable_irq();
 		SysTick->CTRL = 0;
 		//printf("APP Start ...\r\n");
@@ -275,9 +275,8 @@ int main(void)
   MX_DMA_Init();
   MX_SPI3_Init();
   MX_USART2_UART_Init();
-  MX_USART3_UART_Init();
   MX_USB_DEVICE_Init();
-  //MX_IWDG_Init();
+  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
 
   HAL_IWDG_Refresh(&hiwdg); //Reset watchdog timer
@@ -528,7 +527,10 @@ void modbus_cmd () {
     crypdedRx = RX_MODE_NORMAL;
 
   unsigned int upgMode = CRC_MODE_NORMAL;
+  SEGGER_RTT_printf(0, " %#02x %#02x %#02x  %d\n" , UARTBuffer0[0], UARTBuffer0[1], UARTBuffer0[2], UARTCount0);
+
   if ((UARTCount0 > 0) && ((UARTBuffer0[0] == slave_addr) || (UARTBuffer0[0] == 0))) {
+	SEGGER_RTT_printf(0, " rx\n");
     modbus_crc (UARTCount0, upgMode);
     if (crc_calc != 0) {
       upgMode = CRC_MODE_UPGRADE;

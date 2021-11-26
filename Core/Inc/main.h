@@ -17,6 +17,7 @@
   *
   ******************************************************************************
   */
+//#define BOOTLOADER defined in properties / symbols
 /* USER CODE END Header */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
@@ -94,7 +95,6 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 void ClearStatus(uint8_t motor_id);
-void update_flash_backup();
 void read_SN(void);
 
 
@@ -126,16 +126,8 @@ void set_tx_flag(uint8_t* tx_buffer, uint8_t length);
 #define RS485_TX_GPIO_Port GPIOA
 #define LORA_NSS_Pin GPIO_PIN_4
 #define LORA_NSS_GPIO_Port GPIOA
-#define CTS_OUT4_Pin GPIO_PIN_13
-#define CTS_OUT4_GPIO_Port GPIOB
-#define RTS_OUT3_Pin GPIO_PIN_14
-#define RTS_OUT3_GPIO_Port GPIOB
 #define RS485_RX_Pin GPIO_PIN_15
 #define RS485_RX_GPIO_Port GPIOA
-#define TX_OUT2_Pin GPIO_PIN_10
-#define TX_OUT2_GPIO_Port GPIOC
-#define RX_OUT1_Pin GPIO_PIN_11
-#define RX_OUT1_GPIO_Port GPIOC
 #define BT1_Pin GPIO_PIN_12
 #define BT1_GPIO_Port GPIOC
 #define BT2_Pin GPIO_PIN_2
@@ -157,6 +149,7 @@ void set_tx_flag(uint8_t* tx_buffer, uint8_t length);
 #define LED_BL_Pin GPIO_PIN_9
 #define LED_BL_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
+
 #define LORA 1
 #define XBEE 2
 #define NONE 0
@@ -165,9 +158,10 @@ void set_tx_flag(uint8_t* tx_buffer, uint8_t length);
 #define XBEE2RS485 7
 #define MICRO 8
 #define PICO  9
-//#define DEVICE KVARK
 
-#define WAIT_TO_APPL 5000
+//#define DEVICE MICRO // defined in ioc
+
+#define WAIT_TO_APPL 6000
 #define WAIT_TO_APPL2 60000
 
 #define set                 1

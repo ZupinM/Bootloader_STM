@@ -13,7 +13,7 @@
 #include "main.h"
 #include "usb_device.h"
 #include "usbd_cdc_if.h"
-#include "flash.h"
+#include "../../../Micro/Core/Inc/flash.h"
 #include "iwdg.h"
 
 

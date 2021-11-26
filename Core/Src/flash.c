@@ -1,7 +1,7 @@
-#include "flash.h"
 //#include "../../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_flash.h"
 #include "stm32l4xx_hal.h"
 #include <string.h>
+#include "../../../Micro/Core/Inc/flash.h"
 
 #define ACK_OK      0x00
 #define ACK_ERROR   0xFF
@@ -17,8 +17,6 @@ extern unsigned int crypdedRx;
 /* IAP - flash write (parameters backup) */
 unsigned int command[5]; 	//IAP - spremenljivki
 unsigned int result[5];
-float        flash_backup[FLASH_USER_SIZE]; 	//polje spremenljivk, ki se zapisejo v flash
-unsigned int FlashWriteCounter;
 unsigned int crc_flash;
 float sys_vars[256];
 //int *lflags_p = (int*)&lflags;
@@ -73,7 +71,7 @@ void ModBus_SendInt(unsigned int val) //sent one int
 unsigned int Address_old;
 void flash_erase(unsigned int start_sector, unsigned int stop_sector) {
 
-	  int start_page = start_sector * 2; //page_size: 0x800 (STM),  sector_size: 0x1000 (LPC)
+	  int start_page = (start_sector * 2) + 1; //page_size: 0x800 (STM),  sector_size: 0x1000 (LPC)
 
 	  /* Unlock the Flash to enable the flash control register access *************/
 	  HAL_FLASH_Unlock();
@@ -95,7 +93,7 @@ void flash_erase(unsigned int start_sector, unsigned int stop_sector) {
 	  }else{
 		  UARTBuffer0[2] = ACK_OK;
 	  }
-	  IWDG_ChangeSpeed(IWDG_PRESCALER_8);
+	  IWDG_ChangeSpeed(IWDG_PRESCALER_16);
 	  return;
 }
 
@@ -170,6 +168,7 @@ uint8_t flash_write_upgrade(unsigned int write_address, volatile uint8_t* flash_
 		  return ACK_ERROR;
 		  Error_Handler();
 		}
+		HAL_IWDG_Refresh(&hiwdg);
 	}else{
 		flash_backup_dw++;
 		Address = Address + sizeof(uint64_t);
