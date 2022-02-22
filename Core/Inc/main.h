@@ -161,11 +161,8 @@ void set_tx_flag(uint8_t* tx_buffer, uint8_t length);
 
 //#define DEVICE MICRO // defined in ioc
 
-#define WAIT_TO_APPL 6000
+#define WAIT_TO_APPL 3000
 #define WAIT_TO_APPL2 60000
-
-#define set                 1
-#define clear               0
 
 //RS485 commands
 #define	CMD_READ            0x01

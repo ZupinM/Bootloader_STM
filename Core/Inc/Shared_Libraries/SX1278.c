@@ -180,7 +180,7 @@ void check_routing(void) {
 
   if (route_number == total_route_number) { // on destination -> razpakiraj paket
     memcpy((char * ) rxBufferCopy, (char * ) module.rxBuffer, module.packetLength + 4 + total_route_number);
-    //memmove((char * ) module.rxBuffer, (char * ) module.rxBuffer + 3 + route_number, module.packetLength);
+    memmove((char * ) module.rxBuffer, (char * ) module.rxBuffer + 3 + route_number, module.packetLength);
     module.routed = 1;
     module.packetReady = 1;
   }else { //forward to another router

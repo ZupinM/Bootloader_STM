@@ -649,7 +649,7 @@ void modbus_cmd () {
             break;
           }
           case CMD_GET_APP_SIZE: {
-            ModBus_SendInt(sys_defs.FLASH_APP_SIZE);
+            ModBus_SendInt(sys_defs.FLASH_APP_SIZE + 0x2000); // sigma subtracts 0x2000 somewhere for app erase
             break;
           }
           case CMD_GET_APP_ADDR: {
