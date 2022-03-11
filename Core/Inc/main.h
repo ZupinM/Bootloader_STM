@@ -217,5 +217,3 @@ typedef struct //mora biti 256 bytov velik
 #endif
 
 #endif /* __MAIN_H */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
