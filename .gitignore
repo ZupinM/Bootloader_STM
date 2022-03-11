@@ -1,7 +1,7 @@
 *.ind
 *.prepatch
 *.bin
-*.ld
+#*.ld
 
 # Prerequisites
 *.d
