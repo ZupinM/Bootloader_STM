@@ -210,7 +210,7 @@ void read_SysVars(unsigned int addr)
   module.power = (uint8_t)sys_vars[65];
   module.spFactor = (uint8_t)sys_vars[66];
   module.LoRa_BW = (uint8_t)sys_vars[67];
-  //baudrate = sys_vars[151];
+  baudrate = sys_vars[200];
   transceiver = sys_vars[68];
 }
 

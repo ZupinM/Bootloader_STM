@@ -353,6 +353,7 @@ void reEnable_485_DMA_RX(void){
 }
 
 void UART_ChangeBaudRate(int baud){
+	HAL_NVIC_DisableIRQ(USART2_IRQn);
 	HAL_UART_DMAStop(huart485);
     HAL_UART_DeInit(huart485);
     huart485->Init.BaudRate = baud;
@@ -364,6 +365,11 @@ void UART_ChangeBaudRate(int baud){
 	{
 	  Error_Handler();
 	}
+	__HAL_UART_DISABLE_IT(huart485, UART_IT_PE);    //Disable Parity Error interrupt
+	__HAL_UART_DISABLE_IT(huart485, UART_IT_FE);    //Disable Framing Error interrupt
+	__HAL_UART_DISABLE_IT(huart485, UART_IT_ORE);    //Disable Overrun Error interrupt
+	__HAL_UART_DISABLE_IT(huart485, UART_IT_ERR);
+	__HAL_UART_ENABLE_IT(huart485, UART_IT_IDLE); //Enable UART Idle interrupt
 }
 
 void modbus_ReqProcessed1()

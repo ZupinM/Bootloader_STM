@@ -293,9 +293,6 @@ int main(void)
   }
 #endif
 
-  //HAL_Delay(500);
-
-  //sys_data_write();
   set_LED(GREEN, LED_ON, 0);
   read_SN();
   wait_appl_cnt=WAIT_TO_APPL;
@@ -307,6 +304,9 @@ int main(void)
     if ((slave_addr==0)||(slave_addr>0xFE)) {
         slave_addr=255;		//ce se teh ni, vzemi default ID=255
     }
+  }
+  if(baudrate == 115200){
+	  UART_ChangeBaudRate(baudrate);
   }
 
   if(transceiver == LORA) {
