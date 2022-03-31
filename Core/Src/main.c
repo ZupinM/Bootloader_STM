@@ -84,8 +84,6 @@ float err_currentB;
 float err_positionB;
 float err_voltageB;
 
-extern unsigned int Address_old;
-
 unsigned int tracker_status;			//status kondicije, v kateri je tracker (napake, halli...)
 unsigned int tracker_status2;			//Status for motors 1 & 3 when motor_count > 3
 unsigned int tracker_exstatus;
@@ -102,10 +100,6 @@ unsigned int modbus_timeout_delay;              //unsigned int modbus_timout_del
 
 unsigned int crc_errors;
 
- extern unsigned char pcb_version1;                //TIV           27   27C1=0x1B 0x43 0x01 .... 0x1B=27 0x43='C' 0x01=1 .... vpisi 0x1B4301 oziroma 1786625
- extern char pcb_version2;                         //verzija TIVa  C
- extern unsigned char pcb_version3;                //TIV polaganje 1
-
 uint32_t systick_count = 0;
 
 /* system */
@@ -120,20 +114,16 @@ unsigned int green_led;					//utripanje LED
 unsigned int tick_1s;					//stevec za generiranj 1s intervala
 unsigned int counter10s;                                //stevec za generiranj 10s intervala
 unsigned int modbus_indicator;			//stevec dolzine utripa ob rs485 sprejetju stringa
-extern volatile int slaveCommandTimeout;
 
 /* flags registers */
 unsigned int flags = 0;
 
 /* rs485 */
-extern volatile uint8_t UARTTxEmpty0;
-extern volatile uint8_t UARTTxEmpty1;
 
 unsigned int reset_status;
 volatile unsigned int start_count = 0;
 uint8_t init_main_state = 1;
 
-extern volatile unsigned int number_of_poles;
 extern int enableUpgrade;
 extern unsigned int addrToWrite;
 extern uint8_t receviedPartIndex;
@@ -193,8 +183,6 @@ volatile uint8_t rs485_forward_enabled;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-void ButtonProcess ();
-void StatusUpdate();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/

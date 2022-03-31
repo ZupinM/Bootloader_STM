@@ -16,6 +16,9 @@ Header file za SunTracer
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+// BOOTLOADER VERSION DEFINITION //
+#define BOOT_VER 8003
+
 //#define sw_version 3.0
 #define DEFAULT_MIN_RANGE 0
 
