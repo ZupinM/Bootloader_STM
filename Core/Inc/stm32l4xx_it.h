@@ -28,7 +28,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "Shared_Libraries/SX1278.h"
 
 /* USER CODE END Includes */
 
@@ -48,10 +47,7 @@
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
-void DMA1_Channel7_IRQHandler(void);
-void DMA2_Channel1_IRQHandler(void);
-void DMA2_Channel2_IRQHandler(void);
-void USB_IRQHandler(void);
+
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */

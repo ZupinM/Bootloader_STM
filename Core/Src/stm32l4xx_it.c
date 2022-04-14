@@ -56,12 +56,8 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern PCD_HandleTypeDef hpcd_USB_FS;
-extern DMA_HandleTypeDef hdma_spi3_rx;
-extern DMA_HandleTypeDef hdma_spi3_tx;
-extern DMA_HandleTypeDef hdma_usart2_tx;
+
 /* USER CODE BEGIN EV */
-extern UART_HandleTypeDef *huart485;
 
 /* USER CODE END EV */
 
@@ -76,84 +72,8 @@ extern UART_HandleTypeDef *huart485;
 /* please refer to the startup file (startup_stm32l4xx.s).                    */
 /******************************************************************************/
 
-/**
-  * @brief This function handles DMA1 channel7 global interrupt.
-  */
-void DMA1_Channel7_IRQHandler(void)
-{
-  /* USER CODE BEGIN DMA1_Channel7_IRQn 0 */
-
-  /* USER CODE END DMA1_Channel7_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart2_tx);
-  /* USER CODE BEGIN DMA1_Channel7_IRQn 1 */
-
-  /* USER CODE END DMA1_Channel7_IRQn 1 */
-}
-
-/**
-  * @brief This function handles DMA2 channel1 global interrupt.
-  */
-void DMA2_Channel1_IRQHandler(void)
-{
-  /* USER CODE BEGIN DMA2_Channel1_IRQn 0 */
-
-  /* USER CODE END DMA2_Channel1_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_spi3_rx);
-  /* USER CODE BEGIN DMA2_Channel1_IRQn 1 */
-
-  /* USER CODE END DMA2_Channel1_IRQn 1 */
-}
-
-/**
-  * @brief This function handles DMA2 channel2 global interrupt.
-  */
-void DMA2_Channel2_IRQHandler(void)
-{
-  /* USER CODE BEGIN DMA2_Channel2_IRQn 0 */
-
-  /* USER CODE END DMA2_Channel2_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_spi3_tx);
-  /* USER CODE BEGIN DMA2_Channel2_IRQn 1 */
-
-  /* USER CODE END DMA2_Channel2_IRQn 1 */
-}
-
-/**
-  * @brief This function handles USB event interrupt through EXTI line 17.
-  */
-void USB_IRQHandler(void)
-{
-  /* USER CODE BEGIN USB_IRQn 0 */
-
-  /* USER CODE END USB_IRQn 0 */
-  HAL_PCD_IRQHandler(&hpcd_USB_FS);
-  /* USER CODE BEGIN USB_IRQn 1 */
-
-  /* USER CODE END USB_IRQn 1 */
-}
-
 /* USER CODE BEGIN 1 */
 
-#if DEVICE == KVARK
-void USART1_IRQHandler(void)
-#elif DEVICE == MICRO
-void USART2_IRQHandler(void)
-#endif
-{
-  /* USER CODE BEGIN USART1_IRQn 0 */
-	if(__HAL_UART_GET_FLAG(huart485, UART_FLAG_IDLE)){   // if Idle flag is set
-		HAL_UART_RxCpltCallback(huart485);
-	}
-	__HAL_UART_CLEAR_FLAG(huart485, 0xFFFFFFFF); //Clear all flags
-  /* USER CODE END USART1_IRQn 0 */
-  HAL_UART_IRQHandler(huart485);
-  /* USER CODE BEGIN USART1_IRQn 1 */
-
- 	//__HAL_UART_CLEAR_OREFLAG(&huart1);
-	__HAL_UART_CLEAR_IDLEFLAG(huart485);
-
-  /* USER CODE END USART1_IRQn 1 */
-}
 
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
