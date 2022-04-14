@@ -38,7 +38,7 @@
 #include "RTT/SEGGER_RTT.h"
 #include "../../../Micro/Core/Inc/flash.h"
 
-//#define PRODUCTION_RELEASE
+#define PRODUCTION_RELEASE
 
 /* USER CODE END Includes */
 
@@ -103,7 +103,6 @@ unsigned int crc_errors;
 uint32_t systick_count = 0;
 
 /* system */
-unsigned int  button_timeout;
 unsigned int  OverUnderVoltageFlagClearTimer;
 
 //unsigned char move_direction_B;
@@ -208,7 +207,8 @@ void go2APP(void)
 	//printf("BOOTLOADER Start\r\n");
 
 	//check if there is something "installed" in the app FLASH region
-	if(((*(__IO uint32_t*) FLASH_APP_START_ADDR) & 0x2FFC0000) == 0x20000000)
+	if((((*(__IO uint32_t*) FLASH_APP_VERSION_ADDR)&0xffff) / 1000) == (APP_VER/1000) || //App
+		((*(__IO uint32_t*) FLASH_APP_VERSION_ADDR)&0xffff) == DEVICE)					 //Boot Flasher
 	{
 		IWDG_ChangeSpeed(IWDG_PRESCALER_32);
 		MX_USB_DEVICE_DeInit();
@@ -638,7 +638,7 @@ void modbus_cmd () {
             break;
           }
           case CMD_GET_VERSION: {
-            flash_read_boot (FLASH_APP_START_ADDR, 3);
+            flash_read_boot (FLASH_APP_VERSION_ADDR, 3);
             break;
           }
 
