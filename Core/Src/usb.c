@@ -9,6 +9,7 @@
 #include "RTT/SEGGER_RTT.h"
 
 uint8_t bufGlbFirst[256];
+uint8_t bufGlbVersion[256];
 uint8_t USB_rxBuff[100];
 uint16_t USB_rxCount;
 uint8_t USB_upgradeBuff[256];
@@ -32,14 +33,28 @@ void USART_To_USB_Send_Data(uint8_t* ascii_string, uint32_t count_in){
 }
 
 /***********************************************************
-  USB WRITE VALUES
+  USB UPGRADE
 ************************************************************/
+/*
+ * 1. Save first packet, return
+ * 2. Check if device type is micro, Erase app, Write frist packet, skip current packet (version) and save it
+ * 3. Write all next packets
+ * 4. When timeout reached, write version
+ */
 void USB_write(void) {
 
 	if (USB_rxCount<255){	//else New data received
 		if(USB_rxCount > 0 && enableUpgrade){
 			if(LastPacketTimeout++ < 200){ //Last upgrade packed received (smaller than 255)
 				return;
+			}else{
+				if(Address_old > sys_defs.FLASH_APP_START_ADDRESS + 0x200){
+					Address_old = 0; //prevent detection of resent packet
+				}
+				if(flash_write_upgrade(sys_defs.FLASH_APP_START_ADDRESS + 0x100, bufGlbVersion, 0x100)){	//Write version
+					send_back = USB_RESPONSE_ERROR;
+		    	}
+				enableUpgrade = 0;
 			}
 		}else{
 			return; // Packets smaller than upgrade packets rejected when not in upgrade mode
@@ -58,14 +73,16 @@ void USB_write(void) {
       // checking version type MICRO
       char bufGlbVCheck[16];
       memcpy(bufGlbVCheck, &USB_upgradeBuff[FLASH_APP_VERSION_ADDR & 0xff], 0x10);
-      if (decryptData (bufGlbVCheck, 0x10) == 0) {
+      if (decryptData (bufGlbVCheck, 0x10) == 0) {							//decrypt packet and check if correct device type
         int pVer = bufGlbVCheck[0] + 0x100 * bufGlbVCheck[1];
         if(pVer / 1000 == sys_defs.DEV_TYPE || pVer == sys_defs.DEV_TYPE){ //firmware or bootFlasher
         	enableUpgrade = 1;
+        	Address_old = 0;
             eraseApp();	// erasing and writing 1st sector
             if(flash_write_upgrade(sys_defs.FLASH_APP_START_ADDRESS, bufGlbFirst, 0x100)){
             	send_back = USB_RESPONSE_ERROR;
             }
+            memcpy(bufGlbVersion, USB_upgradeBuff, 0x100); //save version packet
         }else{
         	send_back = USB_RESPONSE_ERROR;
         }
@@ -75,7 +92,7 @@ void USB_write(void) {
     }
     // writing 2nd and other sectors
     if(addrToWrite > sys_defs.FLASH_APP_START_ADDRESS) {
-      if(enableUpgrade){
+      if(enableUpgrade && addrToWrite != sys_defs.FLASH_APP_START_ADDRESS + 0x100){ //Skip writing version packet
     	  if(flash_write_upgrade(addrToWrite, USB_upgradeBuff, 0x100)){
     		  send_back = USB_RESPONSE_ERROR;
     	  }

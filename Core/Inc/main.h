@@ -83,6 +83,7 @@ extern volatile uint32_t UARTCount0;
 extern uint16_t online_timeouts[165];
 extern uint8_t available_positioners[20];
 extern unsigned char ButtonStatus;
+extern unsigned int Address_old;
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
