@@ -10,6 +10,7 @@
 
 uint8_t bufGlbFirst[256];
 uint8_t bufGlbVersion[256];
+uint8_t write_version;
 uint8_t USB_rxBuff[100];
 uint16_t USB_rxCount;
 uint8_t USB_upgradeBuff[256];
@@ -43,18 +44,22 @@ void USART_To_USB_Send_Data(uint8_t* ascii_string, uint32_t count_in){
  */
 void USB_write(void) {
 
-	if (USB_rxCount<255){	//else New data received
+	if(write_version){
+		if(Address_old > sys_defs.FLASH_APP_START_ADDRESS + 0x200){
+			Address_old = 0; //prevent detection of resent packet
+		}
+		if(flash_write_upgrade(sys_defs.FLASH_APP_START_ADDRESS + 0x100, bufGlbVersion, 0x100)){	//Write version
+			send_back = USB_RESPONSE_ERROR;
+    	}
+		enableUpgrade = 0;
+		write_version = 0;
+	}
+	else if (USB_rxCount<255){	//else New data received
 		if(USB_rxCount > 0 && enableUpgrade){
-			if(LastPacketTimeout++ < 200){ //Last upgrade packed received (smaller than 255)
+			if(++LastPacketTimeout < 200){ //Last upgrade packed received (smaller than 255)
 				return;
 			}else{
-				if(Address_old > sys_defs.FLASH_APP_START_ADDRESS + 0x200){
-					Address_old = 0; //prevent detection of resent packet
-				}
-				if(flash_write_upgrade(sys_defs.FLASH_APP_START_ADDRESS + 0x100, bufGlbVersion, 0x100)){	//Write version
-					send_back = USB_RESPONSE_ERROR;
-		    	}
-				enableUpgrade = 0;
+				write_version = 1; //Write last packet on timeout, and write version in next loop
 			}
 		}else{
 			return; // Packets smaller than upgrade packets rejected when not in upgrade mode
